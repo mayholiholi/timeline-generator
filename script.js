@@ -1,59 +1,100 @@
-new Vue({
-  el: '#app',
-  vuetify: new Vuetify(),
-  data() {
-    return {
-      userInput: '<黒船来航#1853年7月8日#ペリー提督が浦賀に来航><日米和親条約#1854年3月31日#日本がアメリカと条約を締結><井伊直弼#1858年#安政の大獄が始まる><桜田門外の変#1860年3月24日#井伊直弼が暗殺される><坂本龍馬#1862年3月24日#脱藩><生麦事件#1862年9月14日#薩摩藩士が英国人を殺傷><長州藩#1863年1月29日#攘夷派が政権を掌握する><禁門の変#1864年7月19日#長州藩と幕府軍が衝突><隠し刀#1864年#比翼><池田屋事件#1864年6月5日#新選組が尊攘派志士を襲撃><四国艦隊下関砲撃事件#1864年8月5日#英米仏蘭の四国艦隊が長州藩を攻撃><薩長同盟#1866年1月#薩摩藩と長州藩が同盟を結ぶ><大政奉還#1867年10月14日#徳川慶喜が政権を朝廷に返上><王政復古の大号令#1867年12月9日#新政府が発足><鳥羽伏見の戦い#1868年1月27日#戊辰戦争の始まり><江戸城無血開城#1868年4月11日#江戸城が新政府に引き渡される>',
-      timelineItems: [],
-      minYear: null,
-      maxYear: null
-    };
-  },
-  methods: {
-    generateTimeline() {
-      const entries = this.userInput.match(/<[^>]+>/g);
-      this.timelineItems = entries.map(entry => {
-        const match = entry.match(/<([^#]+)#([^#]+)#([^>]+)>/);
-        if (match) {
-          const year = parseInt(match[2].match(/\d{4}/)[0], 10);
-          return {
-            title: match[1],
-            date: match[2],
-            description: match[3],
-            year: year
-          };
-        }
-        return null;
-      }).filter(item => item !== null);
+function generateTimeline() {
+  const userInput = document.getElementById('userInput').value;
+  const timelineEl = document.getElementById('timeline');
+  const emptyEl = document.getElementById('empty');
+  const yearRangeEl = document.getElementById('yearRange');
 
-      this.timelineItems.sort((a, b) => a.year - b.year);
-      this.calculateMinMaxYear();
-      this.applyGradientColors();
-    },
-    calculateMinMaxYear() {
-      const years = this.timelineItems.map(item => item.year);
-      this.minYear = Math.min(...years);
-      this.maxYear = Math.max(...years);
-    },
-    applyGradientColors() {
-      const startColor = '#002f4b'; // 深い群青色
-      const endColor = '#FF69B4'; // 朝焼けのピンク
-      this.timelineItems.forEach(item => {
-        const ratio = (item.year - this.minYear) / (this.maxYear - this.minYear);
-        item.color = this.getGradientColor(startColor, endColor, ratio);
-      });
-    },
-    getGradientColor(startColor, endColor, ratio) {
-      const hex = function(x) {
-        x = x.toString(16);
-        return (x.length === 1) ? '0' + x : x;
-      };
+  const lines = userInput.split('\n').filter(line => line.trim());
 
-      const r = Math.ceil(parseInt(startColor.substring(1, 3), 16) * (1 - ratio) + parseInt(endColor.substring(1, 3), 16) * ratio);
-      const g = Math.ceil(parseInt(startColor.substring(3, 5), 16) * (1 - ratio) + parseInt(endColor.substring(3, 5), 16) * ratio);
-      const b = Math.ceil(parseInt(startColor.substring(5, 7), 16) * (1 - ratio) + parseInt(endColor.substring(5, 7), 16) * ratio);
-
-      return `#${hex(r)}${hex(g)}${hex(b)}`;
-    }
+  if (lines.length === 0) {
+    timelineEl.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    yearRangeEl.textContent = '';
+    return;
   }
+
+  const items = lines.map(line => {
+    const parts = line.split('|').map(p => p.trim());
+    if (parts.length >= 2) {
+      const date = parts[0];
+      let title = parts[1];
+      const description = parts[2] || '';
+
+      // 比翼（★）か破局（✕）かチェック
+      const isGame = title.startsWith('★');
+      const isBreakup = title.startsWith('✕') || title.startsWith('×');
+
+      if (isGame) title = title.substring(1).trim();
+      if (isBreakup) title = title.substring(1).trim();
+
+      const yearMatch = date.match(/(\d{4})/);
+      const year = yearMatch ? parseInt(yearMatch[1], 10) : 0;
+      const monthMatch = date.match(/(\d{1,2})月/);
+      const month = monthMatch ? parseInt(monthMatch[1], 10) : 1;
+      const dayMatch = date.match(/(\d{1,2})日/);
+      const day = dayMatch ? parseInt(dayMatch[1], 10) : 1;
+
+      return { date, title, description, year, isGame, isBreakup, sortKey: year * 10000 + month * 100 + day };
+    }
+    return null;
+  }).filter(item => item !== null);
+
+  if (items.length === 0) {
+    timelineEl.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    yearRangeEl.textContent = '';
+    return;
+  }
+
+  items.sort((a, b) => a.sortKey - b.sortKey);
+  emptyEl.classList.add('hidden');
+
+  // 年の範囲を表示
+  const years = items.map(i => i.year).filter(y => y > 0);
+  if (years.length > 0) {
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    yearRangeEl.textContent = minYear === maxYear ? `${minYear}年` : `${minYear}年 - ${maxYear}年`;
+  }
+
+  timelineEl.innerHTML = items.map((item, i) => {
+    let typeClass = '';
+    let badge = '';
+    let effectBox = '';
+
+    if (item.isGame) {
+      typeClass = 'game';
+      badge = '<span class="card-badge">比翼</span>';
+      effectBox = '<div class="sakura-box"></div>';
+    } else if (item.isBreakup) {
+      typeClass = 'breakup';
+      badge = '<span class="card-badge">破局</span>';
+      effectBox = '<div class="tear-box"></div>';
+    }
+
+    const side = i % 2 === 0 ? 'left' : 'right';
+
+    return `
+      <div class="timeline-item ${side} ${typeClass}" style="animation-delay:${i * 0.1}s">
+        <div class="timeline-dot"></div>
+        <div class="timeline-card">
+          ${effectBox}
+          <div class="card-date">${esc(item.date)}</div>
+          ${badge}
+          <div class="card-title">${esc(item.title)}</div>
+          <div class="card-desc">${esc(item.description)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function esc(t) {
+  const d = document.createElement('div');
+  d.textContent = t;
+  return d.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('userInput').value.trim()) generateTimeline();
 });

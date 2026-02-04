@@ -2,67 +2,881 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>タイムライン</title>
-  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.5.10/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>カスタム歴史タイムライン</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    .timeline-container {
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --bg-dark: #1a1a2e;
+      --bg-gradient: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+      --card-bg: rgba(255, 255, 255, 0.08);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --text-primary: #f0f0f5;
+      --text-secondary: #b8b8c8;
+      --text-muted: #7a7a8c;
+      --accent-primary: #e07a5f;
+      --accent-secondary: #81b29a;
+      --timeline-color: rgba(224, 122, 95, 0.4);
+      --game-color: #ffb7c5;
+      --game-bg: rgba(255, 183, 197, 0.15);
+      --game-border: rgba(255, 183, 197, 0.4);
+      --sakura-pink: #ffb7c5;
+      --sakura-light: #ffd9e0;
+      --breakup-color: #7eb8da;
+      --breakup-bg: rgba(126, 184, 218, 0.15);
+      --breakup-border: rgba(126, 184, 218, 0.4);
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg-dark);
+      min-height: 100vh;
+      color: var(--text-primary);
+    }
+
+    .bg-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-gradient);
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .bg-pattern::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(224, 122, 95, 0.08) 0%, transparent 50%);
+    }
+
+    .bg-pattern::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -30%;
+      width: 80%;
+      height: 80%;
+      background: radial-gradient(circle, rgba(129, 178, 154, 0.06) 0%, transparent 50%);
+    }
+
+    /* 波アニメーション */
+    .wave {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 200px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wave svg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .wave1 {
+      animation: wave 8s ease-in-out infinite;
+      opacity: 0.3;
+    }
+
+    .wave2 {
+      animation: wave 10s ease-in-out infinite reverse;
+      opacity: 0.2;
+      bottom: 10px;
+    }
+
+    .wave3 {
+      animation: wave 12s ease-in-out infinite;
+      opacity: 0.15;
+      bottom: 20px;
+    }
+
+    @keyframes wave {
+      0%, 100% {
+        transform: translateX(0);
+      }
+      50% {
+        transform: translateX(-25%);
+      }
+    }
+
+    /* 桜の花びらエフェクト - カード内専用 */
+    .sakura-box {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      border-radius: 16px;
+      z-index: 0;
+    }
+
+    .timeline-item.game .card-date,
+    .timeline-item.game .card-badge,
+    .timeline-item.game .card-title,
+    .timeline-item.game .card-desc {
+      position: relative;
+      z-index: 1;
+    }
+
+    .sakura {
+      position: absolute;
+      top: -10px;
+      opacity: 0;
+      filter: drop-shadow(0 0 1px rgba(255, 200, 220, 0.5));
+      animation: sakuraFall var(--fall-duration, 4s) linear infinite,
+                 sakuraDrift var(--drift-duration, 2s) ease-in-out infinite;
+    }
+
+    .sakura svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    @keyframes sakuraFall {
+      0% {
+        transform: translateY(-5px) rotate(var(--start-rotate, 0deg));
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.9;
+      }
+      85% {
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateY(100px) rotate(var(--end-rotate, 180deg));
+        opacity: 0;
+      }
+    }
+
+    @keyframes sakuraDrift {
+      0%, 100% {
+        margin-left: 0;
+      }
+      50% {
+        margin-left: var(--drift-amount, 8px);
+      }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      padding: 24px 16px;
+      max-width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .header-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* 入力カード */
+    .input-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 28px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .input-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-title::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--accent-primary);
+      border-radius: 50%;
+    }
+
+    .input-area {
+      width: 100%;
+      min-height: 140px;
       padding: 16px;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--text-primary);
+      background: rgba(0, 0, 0, 0.2);
+      resize: none;
     }
+
+    .input-area:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(224, 122, 95, 0.15);
+    }
+
+    .input-area::placeholder {
+      color: var(--text-muted);
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 10px;
+    }
+
+    .hint code {
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .hint .game {
+      color: var(--sakura-pink);
+      margin-left: 8px;
+    }
+
+    .hint .breakup {
+      color: var(--breakup-color);
+      margin-left: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent-primary), #d4665a);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      cursor: pointer;
+      margin-top: 14px;
+      color: white;
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(224, 122, 95, 0.3);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(224, 122, 95, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    /* タイムライン表示エリア */
+    .result-section {
+      margin-top: 32px;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .result-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .result-title::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--accent-secondary);
+      border-radius: 50%;
+    }
+
+    .year-display {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* 縦タイムライン - 中央配置 */
+    .timeline {
+      position: relative;
+      padding: 10px 0 20px 0;
+    }
+
+    /* 中央の縦線 */
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 3px;
+      background: linear-gradient(180deg, transparent, var(--timeline-color) 5%, var(--timeline-color) 95%, transparent);
+      border-radius: 2px;
+      transform: translateX(-50%);
+    }
+
     .timeline-item {
-      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      position: relative;
+      animation: fadeIn 0.4s ease forwards;
+      opacity: 0;
     }
-    .timeline-item:last-child {
-      margin-bottom: 0;
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 左側配置 */
+    .timeline-item.left {
+      justify-content: flex-start;
+      padding-right: calc(50% + 24px);
+    }
+
+    /* 右側配置 */
+    .timeline-item.right {
+      justify-content: flex-end;
+      padding-left: calc(50% + 24px);
+    }
+
+    /* ドットマーカー - 中央 */
+    .timeline-dot {
+      position: absolute;
+      left: 50%;
+      top: 20px;
+      width: 16px;
+      height: 16px;
+      background: var(--bg-dark);
+      border: 3px solid var(--accent-primary);
+      border-radius: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+    }
+
+    /* ノードのリング演出 */
+    .timeline-dot::before,
+    .timeline-dot::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      border: 2px solid var(--accent-primary);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+    }
+
+    .timeline-dot::before {
+      animation: ripple 3s ease-out infinite;
+    }
+
+    .timeline-dot::after {
+      animation: ripple 3s ease-out infinite 1.5s;
+    }
+
+    @keyframes ripple {
+      0% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.6;
+      }
+      100% {
+        width: 300%;
+        height: 300%;
+        opacity: 0;
+      }
+    }
+
+    .timeline-item.game .timeline-dot {
+      border-color: var(--game-color);
+      background: var(--game-color);
+      box-shadow: 0 0 12px rgba(255, 183, 197, 0.5);
+      animation: dotGlow 2s ease-in-out infinite;
+    }
+
+    .timeline-item.game .timeline-dot::before,
+    .timeline-item.game .timeline-dot::after {
+      border-color: var(--game-color);
+    }
+
+    .timeline-item.game .timeline-dot::before {
+      animation: rippleGame 2.5s ease-out infinite;
+    }
+
+    .timeline-item.game .timeline-dot::after {
+      animation: rippleGame 2.5s ease-out infinite 1.25s;
+    }
+
+    @keyframes rippleGame {
+      0% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.8;
+        box-shadow: 0 0 8px rgba(255, 183, 197, 0.6);
+      }
+      100% {
+        width: 400%;
+        height: 400%;
+        opacity: 0;
+        box-shadow: 0 0 20px rgba(255, 183, 197, 0);
+      }
+    }
+
+    @keyframes dotGlow {
+      0%, 100% {
+        box-shadow: 0 0 12px rgba(255, 183, 197, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 24px rgba(255, 255, 255, 0.9), 0 0 40px rgba(255, 183, 197, 0.7);
+      }
+    }
+
+    /* カード */
+    .timeline-card {
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .timeline-item.game .timeline-card {
+      background: var(--game-bg);
+      border-color: var(--game-border);
+      animation: cardGlow 2s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes cardGlow {
+      0%, 100% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      50% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.2);
+      }
+    }
+
+    .card-date {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .card-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: linear-gradient(135deg, var(--game-color), #ff9aaf);
+      color: #1a1a2e;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .timeline-item.game .card-title {
+      color: var(--game-color);
+    }
+
+    /* 破局イベント */
+    .timeline-item.breakup .timeline-dot {
+      border-color: var(--breakup-color);
+      background: var(--breakup-color);
+      box-shadow: 0 0 12px rgba(126, 184, 218, 0.5);
+      animation: dotGlowBreakup 2s ease-in-out infinite;
+    }
+
+    .timeline-item.breakup .timeline-dot::before,
+    .timeline-item.breakup .timeline-dot::after {
+      border-color: var(--breakup-color);
+    }
+
+    .timeline-item.breakup .timeline-dot::before {
+      animation: rippleBreakup 2.5s ease-out infinite;
+    }
+
+    .timeline-item.breakup .timeline-dot::after {
+      animation: rippleBreakup 2.5s ease-out infinite 1.25s;
+    }
+
+    @keyframes rippleBreakup {
+      0% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.8;
+        box-shadow: 0 0 8px rgba(126, 184, 218, 0.6);
+      }
+      100% {
+        width: 400%;
+        height: 400%;
+        opacity: 0;
+        box-shadow: 0 0 20px rgba(126, 184, 218, 0);
+      }
+    }
+
+    @keyframes dotGlowBreakup {
+      0%, 100% {
+        box-shadow: 0 0 12px rgba(126, 184, 218, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 24px rgba(255, 255, 255, 0.9), 0 0 40px rgba(126, 184, 218, 0.7);
+      }
+    }
+
+    .timeline-item.breakup .timeline-card {
+      background: var(--breakup-bg);
+      border-color: var(--breakup-border);
+      animation: cardGlowBreakup 2s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes cardGlowBreakup {
+      0%, 100% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      50% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(126, 184, 218, 0.2);
+      }
+    }
+
+    .timeline-item.breakup .card-date,
+    .timeline-item.breakup .card-badge,
+    .timeline-item.breakup .card-title,
+    .timeline-item.breakup .card-desc {
+      position: relative;
+      z-index: 1;
+    }
+
+    .timeline-item.breakup .card-title {
+      color: var(--breakup-color);
+    }
+
+    .timeline-item.breakup .card-badge {
+      background: linear-gradient(135deg, var(--breakup-color), #5a9fc4);
+    }
+
+    /* 破局用の涙エフェクト */
+    .tear-box {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      border-radius: 16px;
+      z-index: 0;
+    }
+
+    .snowflake {
+      position: absolute;
+      top: -5px;
+      background: radial-gradient(circle at 30% 30%, #ffffff, rgba(200, 230, 255, 0.6));
+      border-radius: 50%;
+      opacity: 0;
+      filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
+      animation: snowFall var(--fall-duration, 4s) linear infinite,
+                 snowDrift var(--drift-duration, 2s) ease-in-out infinite;
+    }
+
+    @keyframes snowFall {
+      0% {
+        transform: translateY(-5px);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.8;
+      }
+      80% {
+        opacity: 0.6;
+      }
+      100% {
+        transform: translateY(100px);
+        opacity: 0;
+      }
+    }
+
+    @keyframes snowDrift {
+      0%, 100% {
+        margin-left: 0;
+      }
+      50% {
+        margin-left: 6px;
+      }
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .hidden { display: none; }
+
+    /* PC対応 */
+    @media (min-width: 768px) {
+      .container {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 48px 24px;
+      }
+
+      .header h1 {
+        font-size: 28px;
+      }
+
+      .card-title {
+        font-size: 18px;
+      }
+
+      .card-desc {
+        font-size: 15px;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <v-app>
-      <v-main>
-        <template>
-          <v-container max-width="600">
-            <v-row justify="center">
-              <v-col cols="12" md="8">
-                <v-card class="mx-auto">
-                  <v-card-title class="text-h5">タイムライン入力</v-card-title>
-                  <v-card-text>
-                    <v-textarea v-model="userInput" label="入力" outlined :rows="1"></v-textarea>
-                    <v-btn @click="generateTimeline" color="primary">生成</v-btn>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
-            <v-row justify="center" v-if="timelineItems.length">
-              <v-col cols="12" md="8">
-                <v-card class="mx-auto">
-                  <v-card-title class="text-h5">タイムライン</v-card-title>
-                  <v-card-text class="py-0 timeline-container">
-                    <v-timeline align-top dense>
-                      <v-timeline-item v-for="(item, index) in timelineItems" :key="index" :color="item.color" small class="timeline-item">
-                        <v-row class="pt-1">
-                          <v-col cols="3">
-                            <strong>{{ item.date }}</strong>
-                          </v-col>
-                          <v-col>
-                            <strong>{{ item.title }}</strong>
-                            <div class="text-caption">{{ item.description }}</div>
-                          </v-col>
-                        </v-row>
-                      </v-timeline-item>
-                    </v-timeline>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-container>
-        </template>
-      </v-main>
-    </v-app>
+  <div class="bg-pattern"></div>
+
+  <!-- 波アニメーション -->
+  <div class="wave wave1">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z" fill="rgba(224, 122, 95, 0.15)"/>
+    </svg>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.5.10/dist/vuetify.min.js"></script>
+  <div class="wave wave2">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,80 C200,20 400,100 600,50 C800,0 1000,80 1200,40 L1200,120 L0,120 Z" fill="rgba(129, 178, 154, 0.12)"/>
+    </svg>
+  </div>
+  <div class="wave wave3">
+    <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,40 C150,100 350,20 500,70 C650,120 850,30 1200,80 L1200,120 L0,120 Z" fill="rgba(255, 183, 197, 0.1)"/>
+    </svg>
+  </div>
+
+  <div class="container">
+    <header class="header">
+      <h1>カスタム歴史タイムライン</h1>
+      <p class="header-sub">歴史とゲームイベントを組み合わせてニコニコするやつ</p>
+    </header>
+
+    <div class="input-card">
+      <div class="input-title">年表入力</div>
+      <textarea id="userInput" class="input-area" placeholder="1行1イベントで入力...">1853年7月 | 黒船来航 | ペリー提督が浦賀に来航
+1854年3月 | 日米和親条約 | 下田と箱館を開港
+1860年3月 | 桜田門外の変 | 井伊直弼が暗殺される
+1864年 | ★坂本龍馬と比翼 | 隠し刀との絆
+1865年 | ✕坂本龍馬と破局 | 二股がバレたため
+1866年1月 | 薩長同盟 | 薩摩と長州が同盟
+1867年10月 | 大政奉還 | 徳川慶喜が政権返上
+1868年1月 | 鳥羽伏見の戦い | 戊辰戦争の始まり</textarea>
+      <div class="hint">
+        <code>日付 | タイトル | 説明</code>
+        <span class="game">★比翼</span>
+        <span class="breakup">✕破局</span>
+      </div>
+      <button class="btn" onclick="generateTimeline()">年表を生成</button>
+    </div>
+
+    <div class="result-section">
+      <div class="result-header">
+        <div class="result-title">タイムライン</div>
+        <div class="year-display" id="yearRange"></div>
+      </div>
+      <div id="timeline" class="timeline"></div>
+      <div id="empty" class="empty">入力して「年表を生成」をタップ</div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
+  <script>
+    // 桜の花びらSVG（細長い楕円形）
+    function createPetalSVG() {
+      const hue = Math.random() * 15;
+      const id = 'p' + Math.random().toString(36).substr(2, 9);
+
+      return `<svg viewBox="0 0 12 20" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="${id}" cx="50%" cy="30%" r="70%">
+            <stop offset="0%" stop-color="hsl(${350 + hue}, 100%, 95%)"/>
+            <stop offset="50%" stop-color="hsl(${345 + hue}, 90%, 85%)"/>
+            <stop offset="100%" stop-color="hsl(${340 + hue}, 80%, 75%)"/>
+          </radialGradient>
+          <filter id="glow${id}" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="0.8" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <ellipse cx="6" cy="10" rx="5" ry="9" fill="url(#${id})" filter="url(#glow${id})"/>
+      </svg>`;
+    }
+
+    // 桜の花びらを生成（小さくさりげなく）
+    function createSakuraInCard(container) {
+      const petal = document.createElement('div');
+      petal.className = 'sakura';
+      petal.innerHTML = createPetalSVG();
+
+      const width = Math.random() * 2 + 3;
+      const height = width * (1.4 + Math.random() * 0.3);
+      const left = Math.random() * 80 + 10;
+      const fallDuration = Math.random() * 2 + 4;
+      const driftDuration = Math.random() * 1 + 2;
+      const delay = Math.random() * 0.5;
+      const startRotate = Math.random() * 360;
+      const endRotate = startRotate + (Math.random() > 0.5 ? 120 : -120);
+      const driftAmount = (Math.random() * 6 - 3);
+
+      petal.style.left = left + '%';
+      petal.style.width = width + 'px';
+      petal.style.height = height + 'px';
+      petal.style.setProperty('--fall-duration', fallDuration + 's');
+      petal.style.setProperty('--drift-duration', driftDuration + 's');
+      petal.style.setProperty('--start-rotate', startRotate + 'deg');
+      petal.style.setProperty('--end-rotate', endRotate + 'deg');
+      petal.style.setProperty('--drift-amount', driftAmount + 'px');
+      petal.style.animationDelay = `${delay}s, 0s`;
+
+      container.appendChild(petal);
+      setTimeout(() => petal.remove(), (fallDuration + delay) * 1000);
+    }
+
+    // 雪を生成（小さくさりげなく）
+    function createSnowInCard(container) {
+      const snow = document.createElement('div');
+      snow.className = 'snowflake';
+
+      const size = Math.random() * 1.5 + 1;
+      const left = Math.random() * 80 + 10;
+      const fallDuration = Math.random() * 2 + 4;
+      const driftDuration = Math.random() * 1 + 2;
+      const delay = Math.random() * 0.5;
+
+      snow.style.left = left + '%';
+      snow.style.width = size + 'px';
+      snow.style.height = size + 'px';
+      snow.style.setProperty('--fall-duration', fallDuration + 's');
+      snow.style.setProperty('--drift-duration', driftDuration + 's');
+      snow.style.animationDelay = `${delay}s, 0s`;
+
+      container.appendChild(snow);
+      setTimeout(() => snow.remove(), (fallDuration + delay) * 1000);
+    }
+
+    // エフェクト管理
+    let effectIntervals = [];
+    function startEffects() {
+      effectIntervals.forEach(id => clearInterval(id));
+      effectIntervals = [];
+
+      // 桜エフェクト（さりげなく）
+      document.querySelectorAll('.sakura-box').forEach(box => {
+        for (let i = 0; i < 2; i++) {
+          setTimeout(() => createSakuraInCard(box), i * 800);
+        }
+        effectIntervals.push(setInterval(() => createSakuraInCard(box), 1500));
+      });
+
+      // 雪エフェクト（さりげなく）
+      document.querySelectorAll('.tear-box').forEach(box => {
+        for (let i = 0; i < 2; i++) {
+          setTimeout(() => createSnowInCard(box), i * 600);
+        }
+        effectIntervals.push(setInterval(() => createSnowInCard(box), 1200));
+      });
+    }
+
+    // タイムライン生成後にエフェクト開始
+    const originalGenerate = window.generateTimeline;
+    window.generateTimeline = function() {
+      originalGenerate();
+      setTimeout(startEffects, 500);
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(startEffects, 600);
+    });
+  </script>
 </body>
 </html>
