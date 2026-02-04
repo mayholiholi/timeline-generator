@@ -1,3 +1,5 @@
+let effectIntervals = [];
+
 function generateTimeline() {
   const userInput = document.getElementById('userInput').value;
   const timelineEl = document.getElementById('timeline');
@@ -87,6 +89,8 @@ function generateTimeline() {
       </div>
     `;
   }).join('');
+
+  setTimeout(startEffects, 500);
 }
 
 function esc(t) {
@@ -95,6 +99,101 @@ function esc(t) {
   return d.innerHTML;
 }
 
+// 桜の花びらSVG
+function createPetalSVG() {
+  const hue = Math.random() * 15;
+  const id = 'p' + Math.random().toString(36).substring(2, 11);
+
+  return `<svg viewBox="0 0 12 20" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="${id}" cx="50%" cy="30%" r="70%">
+        <stop offset="0%" stop-color="hsl(${350 + hue}, 100%, 95%)"/>
+        <stop offset="50%" stop-color="hsl(${345 + hue}, 90%, 85%)"/>
+        <stop offset="100%" stop-color="hsl(${340 + hue}, 80%, 75%)"/>
+      </radialGradient>
+      <filter id="glow${id}" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="0.8" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    <ellipse cx="6" cy="10" rx="5" ry="9" fill="url(#${id})" filter="url(#glow${id})"/>
+  </svg>`;
+}
+
+function createSakuraInCard(container) {
+  const petal = document.createElement('div');
+  petal.className = 'sakura';
+  petal.innerHTML = createPetalSVG();
+
+  const width = Math.random() * 2 + 3;
+  const height = width * (1.4 + Math.random() * 0.3);
+  const left = Math.random() * 80 + 10;
+  const fallDuration = Math.random() * 2 + 4;
+  const driftDuration = Math.random() * 1 + 2;
+  const delay = Math.random() * 0.5;
+  const startRotate = Math.random() * 360;
+  const endRotate = startRotate + (Math.random() > 0.5 ? 120 : -120);
+  const driftAmount = (Math.random() * 6 - 3);
+
+  petal.style.left = left + '%';
+  petal.style.width = width + 'px';
+  petal.style.height = height + 'px';
+  petal.style.setProperty('--fall-duration', fallDuration + 's');
+  petal.style.setProperty('--drift-duration', driftDuration + 's');
+  petal.style.setProperty('--start-rotate', startRotate + 'deg');
+  petal.style.setProperty('--end-rotate', endRotate + 'deg');
+  petal.style.setProperty('--drift-amount', driftAmount + 'px');
+  petal.style.animationDelay = `${delay}s, 0s`;
+
+  container.appendChild(petal);
+  setTimeout(() => petal.remove(), (fallDuration + delay) * 1000);
+}
+
+function createSnowInCard(container) {
+  const snow = document.createElement('div');
+  snow.className = 'snowflake';
+
+  const size = Math.random() * 1.5 + 1;
+  const left = Math.random() * 80 + 10;
+  const fallDuration = Math.random() * 2 + 4;
+  const driftDuration = Math.random() * 1 + 2;
+  const delay = Math.random() * 0.5;
+
+  snow.style.left = left + '%';
+  snow.style.width = size + 'px';
+  snow.style.height = size + 'px';
+  snow.style.setProperty('--fall-duration', fallDuration + 's');
+  snow.style.setProperty('--drift-duration', driftDuration + 's');
+  snow.style.animationDelay = `${delay}s, 0s`;
+
+  container.appendChild(snow);
+  setTimeout(() => snow.remove(), (fallDuration + delay) * 1000);
+}
+
+function startEffects() {
+  effectIntervals.forEach(id => clearInterval(id));
+  effectIntervals = [];
+
+  document.querySelectorAll('.sakura-box').forEach(box => {
+    for (let i = 0; i < 2; i++) {
+      setTimeout(() => createSakuraInCard(box), i * 800);
+    }
+    effectIntervals.push(setInterval(() => createSakuraInCard(box), 1500));
+  });
+
+  document.querySelectorAll('.tear-box').forEach(box => {
+    for (let i = 0; i < 2; i++) {
+      setTimeout(() => createSnowInCard(box), i * 600);
+    }
+    effectIntervals.push(setInterval(() => createSnowInCard(box), 1200));
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('userInput').value.trim()) generateTimeline();
+  if (document.getElementById('userInput').value.trim()) {
+    generateTimeline();
+  }
 });
