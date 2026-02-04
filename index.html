@@ -690,6 +690,22 @@
 
     .hidden { display: none; }
 
+    .site-footer {
+      text-align: center;
+      padding: 24px 16px;
+      margin-top: 32px;
+    }
+
+    .site-footer a {
+      color: var(--text-muted);
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .site-footer a:hover {
+      color: var(--text-secondary);
+    }
+
     /* PC対応 */
     @media (min-width: 768px) {
       .container {
@@ -765,6 +781,10 @@
       <div id="empty" class="empty">入力して「年表を生成」をタップ</div>
     </div>
   </div>
+
+  <footer class="site-footer">
+    <a href="https://mayholiholi.github.io/" target="_blank" rel="noopener noreferrer">mayholiholi</a>
+  </footer>
 
   <script src="script.js"></script>
 </body>
