@@ -419,7 +419,7 @@
       height: 100%;
       border: 2px solid var(--accent-primary);
       border-radius: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(1);
       opacity: 0;
     }
 
@@ -433,13 +433,11 @@
 
     @keyframes ripple {
       0% {
-        width: 100%;
-        height: 100%;
+        transform: translate(-50%, -50%) scale(1);
         opacity: 0.6;
       }
       100% {
-        width: 300%;
-        height: 300%;
+        transform: translate(-50%, -50%) scale(3);
         opacity: 0;
       }
     }
@@ -449,7 +447,7 @@
       background: var(--game-color);
       box-shadow: 0 0 12px rgba(255, 183, 197, 0.5);
       animation: dotGlow 2s ease-in-out infinite;
-      will-change: opacity;
+      will-change: box-shadow;
     }
 
     .timeline-item.game .timeline-dot::before,
@@ -467,25 +465,21 @@
 
     @keyframes rippleGame {
       0% {
-        width: 100%;
-        height: 100%;
+        transform: translate(-50%, -50%) scale(1);
         opacity: 0.8;
-        box-shadow: 0 0 8px rgba(255, 183, 197, 0.6);
       }
       100% {
-        width: 400%;
-        height: 400%;
+        transform: translate(-50%, -50%) scale(4);
         opacity: 0;
-        box-shadow: 0 0 20px rgba(255, 183, 197, 0);
       }
     }
 
     @keyframes dotGlow {
       0%, 100% {
-        opacity: 0.8;
+        box-shadow: 0 0 12px rgba(255, 183, 197, 0.5);
       }
       50% {
-        opacity: 1;
+        box-shadow: 0 0 20px rgba(255, 183, 197, 0.8);
       }
     }
 
@@ -507,15 +501,15 @@
       animation: cardGlow 2s ease-in-out infinite;
       position: relative;
       overflow: hidden;
-      will-change: opacity;
+      will-change: border-color;
     }
 
     @keyframes cardGlow {
       0%, 100% {
-        opacity: 0.95;
+        border-color: var(--game-border);
       }
       50% {
-        opacity: 1;
+        border-color: rgba(255, 183, 197, 0.6);
       }
     }
 
@@ -556,7 +550,7 @@
       background: var(--breakup-color);
       box-shadow: 0 0 12px rgba(126, 184, 218, 0.5);
       animation: dotGlowBreakup 2s ease-in-out infinite;
-      will-change: opacity;
+      will-change: box-shadow;
     }
 
     .timeline-item.breakup .timeline-dot::before,
@@ -574,25 +568,21 @@
 
     @keyframes rippleBreakup {
       0% {
-        width: 100%;
-        height: 100%;
+        transform: translate(-50%, -50%) scale(1);
         opacity: 0.8;
-        box-shadow: 0 0 8px rgba(126, 184, 218, 0.6);
       }
       100% {
-        width: 400%;
-        height: 400%;
+        transform: translate(-50%, -50%) scale(4);
         opacity: 0;
-        box-shadow: 0 0 20px rgba(126, 184, 218, 0);
       }
     }
 
     @keyframes dotGlowBreakup {
       0%, 100% {
-        opacity: 0.8;
+        box-shadow: 0 0 12px rgba(126, 184, 218, 0.5);
       }
       50% {
-        opacity: 1;
+        box-shadow: 0 0 20px rgba(126, 184, 218, 0.8);
       }
     }
 
@@ -602,15 +592,15 @@
       animation: cardGlowBreakup 2s ease-in-out infinite;
       position: relative;
       overflow: hidden;
-      will-change: opacity;
+      will-change: border-color;
     }
 
     @keyframes cardGlowBreakup {
       0%, 100% {
-        opacity: 0.95;
+        border-color: var(--breakup-border);
       }
       50% {
-        opacity: 1;
+        border-color: rgba(126, 184, 218, 0.6);
       }
     }
 
